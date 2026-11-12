@@ -14,3 +14,15 @@ jobs:
         with:
           node-version: '22'
       - run: node --test tests/budget.test.cjs
+      - run: node --check app/app.js && node --check app/data.js
+      - name: Installer Chromium pour les parcours navigateur
+        run: |
+          npm install --prefix "$RUNNER_TEMP/moneta-browser" --no-save --package-lock=false playwright@1.62.1
+          "$RUNNER_TEMP/moneta-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Tester les parcours complets
+        env:
+          PLAYWRIGHT_MODULE: ${{ runner.temp }}/moneta-browser/node_modules/playwright
+        run: |
+          python -m http.server 8080 > "$RUNNER_TEMP/moneta-http.log" 2>&1 &
+          curl --retry 10 --retry-connrefused --retry-delay 1 --fail http://127.0.0.1:8080/app/ --output /dev/null
+          node tests/browser.cjs
