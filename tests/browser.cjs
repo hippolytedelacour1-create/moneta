@@ -43,10 +43,11 @@ const D = require('../app/data.js');
   const exported=D.parseBackup(text);assert.equal(exported.transactions.length,1);
   const before=await page.evaluate(()=>localStorage.getItem('moneta-demo-v1'));
   await page.locator('#importfile').setInputFiles({name:'bad.json',mimeType:'application/json',buffer:Buffer.from('{bad')});
+  await page.waitForFunction(()=>document.querySelector('#message')?.textContent.includes('refusée'));
   assert.match(await page.locator('#message').innerText(),/refusée/);
   assert.equal(await page.evaluate(()=>localStorage.getItem('moneta-demo-v1')),before);
   const restored={...D.fresh(),name:'Restauré',configured:true,transactions:[{id:'restored',kind:'income',label:'Prime',category:'Autre',amount:30,date:current+'-01'}]};
-  async function chooseBackup(){await page.locator('#importfile').setInputFiles({name:'backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(restored))})}
+  async function chooseBackup(){await page.locator('#importfile').setInputFiles({name:'backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(restored))});await page.locator('#importmodal').waitFor({state:'visible'})}
   await chooseBackup();assert.equal(await page.locator('#importmodal').isVisible(),true);
   await page.locator('#cancelimport').click();assert.equal(await page.evaluate(()=>localStorage.getItem('moneta-demo-v1')),before);
   await chooseBackup();await page.locator('#importconsent').check();

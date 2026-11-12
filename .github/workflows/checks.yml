@@ -15,7 +15,8 @@ jobs:
           node-version: '22'
       - run: npm ci
       - run: npm run build
-      - run: node --check app/app.js && node --check app/data.js && node --check app/accounts.js
+      - run: npm run build:edge
+      - run: node --check app/app.js && node --check app/data.js && node --check app/accounts.js && node --check app/plus.js
       - name: Installer Chromium pour les parcours navigateur
         run: |
           npm install --prefix "$RUNNER_TEMP/moneta-browser" --no-save --package-lock=false playwright@1.62.1 @electric-sql/pglite@0.5.16
@@ -30,3 +31,4 @@ jobs:
           node --test tests/database.cjs
           node tests/browser.cjs
           MONETA_MOCK_AUTH=1 node tests/accounts.browser.cjs
+          node tests/plus-ci.browser.cjs

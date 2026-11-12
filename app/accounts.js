@@ -27,7 +27,7 @@
     const ticket=++epoch;
     if(!next){
       const hadSession=!!session;session=null;cache=null;api=null;status='';error='';busy=false;loading=false;
-      if(hadSession)app().useLocal();refresh();return;
+      if(hadSession)app().useLocal();root.dispatchEvent(new Event('moneta-auth-changed'));refresh();return;
     }
     if(session&&next.user?.id!==session.user.id){session=null;cache=null;api=null;app().useLocal()}
     const result=await client.auth.getUser(next.access_token);
@@ -38,7 +38,7 @@
     session={...next,user:result.data.user};
     api=S.remoteForSession(root.MonetaSupabase.createClient,config,session);
     if(!changed){refresh();return}
-    cache=S.accountStore(localStorage,session.user.id);
+    cache=S.accountStore(localStorage,session.user.id);root.dispatchEvent(new Event('moneta-auth-changed'));
     app().activate(accountAdapter(),accountLabel());
     try{
       const remote=await api.read();if(ticket!==epoch)return;
@@ -122,5 +122,17 @@
     }catch(e){error=failure(e);refresh()}
     root.addEventListener('moneta-budget-saved',updateBadge);
   }
-  root.MonetaAccounts={init,render};
+  async function callBilling(action,payload){
+    if(!client)throw new Error('Connecte-toi à Mon compte.');
+    const result=await client.auth.getSession(),current=result.data?.session;
+    if(result.error||!current)throw new Error('Connecte-toi à Mon compte.');
+    let response;try{response=await fetch(config.url+'/functions/v1/moneta-billing/'+action,{method:action==='status'?'GET':'POST',headers:{apikey:config.publishableKey,Authorization:'Bearer '+current.access_token,'Content-Type':'application/json'},...(payload?{body:JSON.stringify(payload)}:{}),signal:AbortSignal.timeout(25000)})}catch{throw new Error('Le service est momentanément indisponible. Ton budget est conservé.')}
+    const data=await response.json();
+    if(!response.ok){
+      const errors={AUTH_REQUIRED:'Reconnecte-toi à Mon compte.',PLUS_REQUIRED:'Cette simulation nécessite un accès Plus actif.',SUBSCRIPTION_EXISTS:'Un abonnement existe déjà. Utilise Gérer mon abonnement.',PAYMENT_PROCESSING:'Le paiement est en cours de validation. Actualise ton accès dans un instant.',NO_SUBSCRIPTION:'Aucun abonnement à gérer pour ce compte.',INVALID_SCENARIO:'Vérifie les montants et la durée du scénario.',BILLING_NOT_CONFIGURED:'Le paiement de test n’est pas encore configuré.'};
+      throw new Error(errors[data.error]||'Le service est momentanément indisponible. Ton budget est conservé.');
+    }
+    return data;
+  }
+  root.MonetaAccounts={init,render,callBilling};
 })(window);

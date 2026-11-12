@@ -13,3 +13,5 @@ Scénario de test utilisateur : docs/TEST-UTILISATEURS.md
 Comptes : npm ci puis npm run build avant de servir le dépôt localement.
 Le SDK Supabase est regroupé au build ; aucun framework n'a été ajouté.
 Les inscriptions publiques restent fermées en attente des réglages e-mail.
+
+Offre freemium et Stripe : docs/MONETISATION.md (test uniquement).
