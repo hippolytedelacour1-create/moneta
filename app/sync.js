@@ -1,12 +1,11 @@
-/* Synchronisation opt-in. Ce module n'est chargé par aucune page tant que le
-   projet Supabase et l'authentification n'ont pas été configurés et vérifiés. */
+/* Synchronisation explicite : caches distincts par compte et révisions contrôlées côté serveur. */
 (function(root){
   'use strict';
   const D=typeof module!=='undefined'&&module.exports?require('./data.js'):root.MonetaData;
   class SyncError extends Error {constructor(message,code){super(message);this.name='SyncError';this.code=code}}
   const conflict=()=>new SyncError('Le budget a changé sur un autre appareil. Recharge sa version avant de synchroniser.','CONFLICT');
   function remoteError(error){
-    if(error?.code==='40001')return conflict();
+    if(['40001','PT409'].includes(error?.code))return conflict();
     if(['42501','PGRST301','PGRST302'].includes(error?.code)||error?.status===401)return new SyncError('Reconnecte-toi avant de synchroniser.','AUTH');
     return new SyncError('Synchronisation impossible. La copie de cet appareil est conservée.','REMOTE');
   }
@@ -59,6 +58,7 @@
       key, get, raw:()=>storage.getItem(key),
       // App edits are local until upload() is explicitly called.
       writeLocal(payload){const previous=get();put({...previous,budget:JSON.stringify(D.validate(payload)),dirty:true})},
+      replaceLocal(payload){const previous=get();backup(previous);put({...previous,budget:JSON.stringify(D.validate(payload)),dirty:true})},
       acceptRemote(result,options){adopt(row(result,userId),options)},
       previous:()=>storage.getItem(backupKey),
       async upload(api){

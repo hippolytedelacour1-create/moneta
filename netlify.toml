@@ -1,6 +1,6 @@
 [build]
   publish = "."
-  command = "node --test tests/budget.test.cjs"
+  command = "npm run build"
 
 [build.environment]
   NODE_VERSION = "22"

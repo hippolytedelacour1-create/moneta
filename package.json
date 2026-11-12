@@ -1,0 +1,11 @@
+{
+  "name": "moneta",
+  "version": "2.1.0",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/budget.test.cjs tests/sync.test.cjs",
+    "build": "npm test && node scripts/build.cjs"
+  },
+  "dependencies": { "@supabase/supabase-js": "2.119.0" },
+  "devDependencies": { "esbuild": "0.28.2" }
+}

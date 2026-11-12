@@ -1,7 +1,7 @@
 /* PostgreSQL/WASM test harness. No Supabase project or real account is modified. */
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {readFileSync} = require('node:fs');
+const {readFileSync,readdirSync} = require('node:fs');
 const {PGlite} = require(process.env.PGLITE_MODULE || '@electric-sql/pglite');
 const D = require('../app/data.js');
 const A='00000000-0000-4000-8000-000000000001', B='00000000-0000-4000-8000-000000000002';
@@ -22,7 +22,7 @@ test('isolation des comptes et révisions dans un vrai moteur PostgreSQL',async 
       grant usage on schema auth to authenticated, anon;
       grant execute on function auth.uid() to authenticated, anon;`);
     await db.query('insert into auth.users values($1),($2)',[A,B]);
-    await db.exec(readFileSync('supabase/migrations/202611120001_moneta_documents.sql','utf8'));
+    for(const file of readdirSync('supabase/migrations').filter(f=>f.endsWith('.sql')).sort())await db.exec(readFileSync('supabase/migrations/'+file,'utf8'));
     await t.test('un visiteur anonyme ne peut ni lire ni écrire',async()=>{
       await as(null,'anon');
       await assert.rejects(()=>db.query('select * from public.moneta_documents'),/permission denied/);

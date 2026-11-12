@@ -13,8 +13,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test tests/budget.test.cjs tests/sync.test.cjs
-      - run: node --check app/app.js && node --check app/data.js
+      - run: npm ci
+      - run: npm run build
+      - run: node --check app/app.js && node --check app/data.js && node --check app/accounts.js
       - name: Installer Chromium pour les parcours navigateur
         run: |
           npm install --prefix "$RUNNER_TEMP/moneta-browser" --no-save --package-lock=false playwright@1.62.1 @electric-sql/pglite@0.5.16
@@ -28,3 +29,4 @@ jobs:
           curl --retry 10 --retry-connrefused --retry-delay 1 --fail http://127.0.0.1:8080/app/ --output /dev/null
           node --test tests/database.cjs
           node tests/browser.cjs
+          MONETA_MOCK_AUTH=1 node tests/accounts.browser.cjs

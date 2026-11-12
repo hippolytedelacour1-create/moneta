@@ -1,52 +1,56 @@
-# Préparation des comptes et de la synchronisation
+# Comptes et synchronisation — Moneta
 
-## Choix proposé pour l'existant
+## État livré
 
-Conserver Netlify et le frontend HTML/JavaScript. Un service géré comme Supabase peut réunir authentification et PostgreSQL sans reconstruction de l'application. Supabase est connecté, mais la liste des projets accessibles est vide. L’organisation personnelle est identifiée ; son choix par le propriétaire reste requis avant création du projet. Cette architecture est préparée ; aucune infrastructure n'a été créée, aucune migration exécutée et aucune donnée locale envoyée.
+Le projet Supabase **Moneta** est créé dans l'organisation personnelle du propriétaire, à Paris (`eu-west-3`). Référence : `ypdvqatkqzvzyrggiseh`. Le site reste hébergé à son adresse Netlify existante.
 
-Les guides d'authentification et de stockage ont été consultés. Les exemples Next.js/Vercel ne sont pas appliqués à cette application statique Netlify.
+La rubrique **Mon compte** permet aux utilisateurs déjà confirmés de se connecter avec leur e-mail et mot de passe. Le SDK officiel Supabase est installé avec une version exacte et un lockfile ; il est regroupé localement pendant le build, sans CDN externe ni changement de framework.
 
-## Contrat de données envisagé
+Les inscriptions publiques sont volontairement fermées (`allowSignup: false` dans `app/cloud-config.js`) tant que les e-mails et URLs de confirmation ne sont pas configurés et vérifiés. Le parcours d'inscription est préparé mais n'est pas proposé à l'utilisateur. Aucun e-mail n'a été envoyé pendant les tests.
 
-Première étape : un document de budget par utilisateur, avec `user_id`, `payload` (même contrat que les exports JSON actuels), `revision` entière et `updated_at` côté serveur. Les identifiants d'opérations existants doivent être conservés. Le modèle local `app/data.js` fournit une validation réutilisable ; une validation serveur indépendante reste obligatoire.
+## Données locales et compte
 
-- Activer l'isolation des lignes (RLS). Chaque lecture, création, modification et suppression doit vérifier côté base que l'utilisateur authentifié est propriétaire du document.
-- La clé publique du projet peut être dans la configuration du frontend. Aucune clé `service_role` ou autre secret privilégié ne doit y figurer.
-- Créer une fonction d'écriture transactionnelle comparant la révision attendue, puis incrémentant la révision côté serveur. Si elle diffère, renvoyer un conflit explicite ; ne pas écraser silencieusement le budget distant.
-- Garder l'export JSON et le mode local. La connexion seule ne doit pas transférer les données : un aperçu et une action « Transférer ce budget vers mon compte » seront nécessaires.
-- Ne pas ajouter les montants et libellés des opérations aux logs ni à la télémétrie.
+- Le budget original reste sous `moneta-demo-v1`, indépendant de tout compte. La connexion ne le transfère jamais.
+- Chaque compte possède une copie distincte sur l'appareil (`moneta-account-v1:<identifiant>`). Le bandeau indique le budget utilisé.
+- **Copier mon budget local vers le compte** copie les données dans la copie du compte sur cet appareil, après confirmation. **Synchroniser le budget du compte** enregistre ensuite explicitement la version distante.
+- À la connexion, une version distante est chargée si la copie locale du compte n'a pas de modifications en attente. Les modifications non synchronisées ne sont jamais remplacées automatiquement.
+- Si deux appareils modifient la même version, le second reçoit un conflit. Il conserve ses données et peut les exporter ou recharger la version distante avec une copie préalable.
+- La déconnexion explicite efface la copie du compte et sa sauvegarde sur l'appareil, après avertissement si des modifications ne sont pas synchronisées. Le budget local indépendant reste conservé.
+- **Supprimer le budget du compte** efface le contenu distant après confirmation. Une révision vide reste pour empêcher les appareils périmés de recréer silencieusement une ancienne version. Cette action ne supprime pas le compte utilisateur.
 
-## Parcours à implémenter après connexion du service
+## Base privée
 
-1. Authentification par lien e-mail avec URLs de retour autorisées pour le domaine Netlify existant. Prévoir expiration, erreur, renvoi du lien et déconnexion.
-2. Si un budget distant existe et un budget local aussi : choix explicite, sauvegarde locale et aperçu. Pas de fusion automatique par montant/date, car deux opérations identiques peuvent être réelles.
-3. Synchronisation d'un document validé avec contrôle de révision. Un statut visible doit distinguer « enregistré sur cet appareil » et « synchronisé ».
-4. Déconnexion : retirer la session, demander quoi conserver sur un appareil partagé, éviter d'afficher le budget du compte A au compte B.
-5. Export, suppression du document et suppression du compte. Le comportement des sauvegardes distantes et leur durée de conservation doit être défini avant ouverture publique.
+`public.moneta_documents` contient un document par utilisateur. La politique de lecture combine rôle authentifié et propriété `auth.uid() = user_id`. Les visiteurs anonymes n'ont aucun accès. Les clients authentifiés ne peuvent pas écrire directement dans la table.
 
-## Tests exigés avant activation
+Les RPC publiques sont `SECURITY INVOKER`. Leur implémentation privilégiée est dans `moneta_private`, hors des schémas exposés par la Data API, avec un contrôle d'identité explicite et un `search_path` fermé. Chaque écriture valide les montants, dates, champs et identifiants d'opérations côté serveur, puis vérifie la révision attendue. Les conflits applicatifs renvoient le code explicite `PT409` ; ils ne sont pas présentés comme des erreurs SQL de sérialisation à réessayer automatiquement.
 
-- Compte A incapable de lire/écrire/supprimer le budget de B, via requête directe et pas seulement via l'interface.
-- Lien de connexion invalide/expiré ; session expirée pendant une sauvegarde ; déconnexion puis connexion d'un autre compte.
-- Deux appareils écrivant la même révision : une seule écriture acceptée ; l'autre conserve sa copie et voit le conflit.
-- Première migration d'un budget local, annulation, rechargement et absence de transfert sans action.
-- Réseau indisponible : données locales conservées, statut exact, reprise sans doublons.
-- Suppression du compte et contrôle de l'accès ensuite.
+Le client distant est lié au jeton précis de sa session pour ne pas transférer les données de A avec la session de B. Aucun mot de passe n'est enregistré dans les budgets ou exports. La configuration frontend ne contient qu'une URL de projet et une clé publique. Aucune clé privilégiée n'est exposée.
 
-## Ce qui nécessite une intervention du propriétaire
+## Vérification effectuée
 
-Connecter le service choisi au bon compte, choisir sa région et ses conditions de facturation, puis configurer l'authentification et les secrets dans les réglages du service/hébergement. Ces choix ne sont pas remplacés par une fausse connexion dans l'interface. Ne pas transmettre de secret dans une conversation.
+- Tests Node du budget et du cache de synchronisation.
+- Tests PostgreSQL/PGlite sur migrations, RLS, permissions, révisions, suppression et recréation.
+- Tests sur le **service Supabase réel**, avec deux comptes fictifs confirmés : connexion, lecture propriétaire, isolation A/B, anonymes refusés, écritures directes refusées, conflits et suppression.
+- Parcours Chromium sur le service réel : transfert explicite, deux appareils, modification concurrente, conflit sans perte, rechargement avec copie précédente, déconnexion, passage A → B et mobile 390 px. Aucune erreur JavaScript.
+- Audit Supabase après installation : aucun avis de sécurité ni de performance sur le schéma ajouté.
 
+Les comptes fictifs, sessions et budgets de test ont été supprimés. Aucune donnée réelle utilisateur n'a été transférée.
 
-## Préparation technique vérifiée (12 novembre 2026)
+La CI exécute les tests Node, PostgreSQL local et les parcours navigateur. Le parcours compte en CI utilise des réponses HTTP simulées, sans secrets ni comptes persistants. Les tests du service réel sont opt-in (`tests/supabase.integration.cjs` et `tests/accounts.browser.cjs`) et exigent deux comptes fictifs jetables. Ils ne sont pas lancés contre des budgets d'utilisateurs.
 
-- `supabase/migrations/202611120001_moneta_documents.sql` crée les documents privés, la politique de lecture limitée au propriétaire, la validation serveur et les fonctions d'écriture/suppression à révision attendue. Les écritures directes sur la table sont interdites aux clients. La suppression du budget efface son contenu et conserve uniquement sa révision pour empêcher un ancien appareil d'écraser un budget recréé.
-- `app/sync.js` prépare un cache distinct par compte et un client distant lié au jeton de la session. Le budget local `moneta-demo-v1` n'est jamais transféré implicitement. Un transfert échoué conserve la copie de l'appareil ; les modifications effectuées pendant un transfert restent à synchroniser.
-- `tests/database.cjs` utilise PostgreSQL via PGlite pour tester le SQL avec des rôles et des utilisateurs fictifs. Il simule `auth.uid()` et ne prouve pas à lui seul le fonctionnement de Supabase Auth réel. Les tests couvrent accès anonyme, séparation A/B, écritures directes refusées, révisions périmées, validation, suppression et cascade.
-- `tests/sync.test.cjs` teste le cache et les conflits avec un transport simulé. Aucun compte, jeton réel ou serveur distant n'a été utilisé pour ces tests.
+## Réglages du propriétaire avant inscriptions publiques
 
-Cette préparation n'est pas chargée dans la page de production. La migration n'a pas été appliquée à Supabase. L'écran de connexion et l'activation publique attendent la création du projet, les réglages d'authentification, l'inspection du schéma existant puis les tests sur le service réel. Les tests PostgreSQL locaux et les transports simulés ne remplacent pas ces étapes.
+Dans https://supabase.com/dashboard/project/ypdvqatkqzvzyrggiseh/auth/url-configuration :
 
-Avant toute activation, vérifier aussi la configuration d'envoi des e-mails : le service SMTP de démonstration Supabase est restreint et ne constitue pas un envoi de production pour tous les utilisateurs. Ne pas désactiver la vérification des e-mails pour contourner cette limite.
+1. Régler **Site URL** sur `https://inquisitive-sable-0a6180.netlify.app/app/`.
+2. Ajouter la même URL exacte aux **Redirect URLs**.
+3. Configurer un fournisseur SMTP dans les réglages d'authentification. Le service de démonstration Supabase est limité aux adresses autorisées ; il ne constitue pas une inscription publique fiable.
+4. Tester création → e-mail → confirmation → connexion avec une adresse de test contrôlée par le propriétaire. Ne pas désactiver la confirmation d'e-mail pour contourner le réglage.
+5. Vérifier la récupération du mot de passe et le parcours de suppression complète du compte avant ouverture au public ; ils ne sont pas encore fournis dans l'interface actuelle.
+6. Activer ensuite `allowSignup` dans une modification revue et testée.
 
-Références : https://supabase.com/docs/guides/auth/auth-email-passwordless et https://supabase.com/docs/guides/auth/auth-smtp.
+Pour utiliser la connexion en bêta sans ouvrir les inscriptions, le propriétaire peut créer son premier utilisateur confirmé dans **Authentication → Users → Add user → Create new user**. Le mot de passe doit être saisi dans Supabase, jamais transmis dans une conversation.
+
+La configuration des e-mails et des URLs ne peut pas être modifiée avec les outils Supabase disponibles dans cette session. Aucun abonnement payant n'a été accepté.
+
+Références : https://supabase.com/docs/guides/auth/auth-email-passwordless, https://supabase.com/docs/guides/auth/passwords et https://supabase.com/docs/guides/auth/auth-smtp.
