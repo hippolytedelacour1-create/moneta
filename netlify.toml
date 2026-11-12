@@ -1,0 +1,16 @@
+[build]
+  publish = "."
+  command = "node --test tests/budget.test.cjs"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[[headers]]
+  for = "/app/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
