@@ -2,7 +2,7 @@
 
 ## Choix proposé pour l'existant
 
-Conserver Netlify et le frontend HTML/JavaScript. Un service géré comme Supabase peut réunir authentification et PostgreSQL sans reconstruction de l'application. Un plugin Supabase est disponible mais aucun projet, connexion ou secret n'est configuré dans cet environnement. Cette architecture est préparée ; aucune infrastructure n'a été créée, aucune migration exécutée et aucune donnée locale envoyée.
+Conserver Netlify et le frontend HTML/JavaScript. Un service géré comme Supabase peut réunir authentification et PostgreSQL sans reconstruction de l'application. Supabase est connecté, mais la liste des projets accessibles est vide. L’organisation personnelle est identifiée ; son choix par le propriétaire reste requis avant création du projet. Cette architecture est préparée ; aucune infrastructure n'a été créée, aucune migration exécutée et aucune donnée locale envoyée.
 
 Les guides d'authentification et de stockage ont été consultés. Les exemples Next.js/Vercel ne sont pas appliqués à cette application statique Netlify.
 
@@ -36,3 +36,17 @@ Première étape : un document de budget par utilisateur, avec `user_id`, `paylo
 ## Ce qui nécessite une intervention du propriétaire
 
 Connecter le service choisi au bon compte, choisir sa région et ses conditions de facturation, puis configurer l'authentification et les secrets dans les réglages du service/hébergement. Ces choix ne sont pas remplacés par une fausse connexion dans l'interface. Ne pas transmettre de secret dans une conversation.
+
+
+## Préparation technique vérifiée (12 novembre 2026)
+
+- `supabase/migrations/202611120001_moneta_documents.sql` crée les documents privés, la politique de lecture limitée au propriétaire, la validation serveur et les fonctions d'écriture/suppression à révision attendue. Les écritures directes sur la table sont interdites aux clients. La suppression du budget efface son contenu et conserve uniquement sa révision pour empêcher un ancien appareil d'écraser un budget recréé.
+- `app/sync.js` prépare un cache distinct par compte et un client distant lié au jeton de la session. Le budget local `moneta-demo-v1` n'est jamais transféré implicitement. Un transfert échoué conserve la copie de l'appareil ; les modifications effectuées pendant un transfert restent à synchroniser.
+- `tests/database.cjs` utilise PostgreSQL via PGlite pour tester le SQL avec des rôles et des utilisateurs fictifs. Il simule `auth.uid()` et ne prouve pas à lui seul le fonctionnement de Supabase Auth réel. Les tests couvrent accès anonyme, séparation A/B, écritures directes refusées, révisions périmées, validation, suppression et cascade.
+- `tests/sync.test.cjs` teste le cache et les conflits avec un transport simulé. Aucun compte, jeton réel ou serveur distant n'a été utilisé pour ces tests.
+
+Cette préparation n'est pas chargée dans la page de production. La migration n'a pas été appliquée à Supabase. L'écran de connexion et l'activation publique attendent la création du projet, les réglages d'authentification, l'inspection du schéma existant puis les tests sur le service réel. Les tests PostgreSQL locaux et les transports simulés ne remplacent pas ces étapes.
+
+Avant toute activation, vérifier aussi la configuration d'envoi des e-mails : le service SMTP de démonstration Supabase est restreint et ne constitue pas un envoi de production pour tous les utilisateurs. Ne pas désactiver la vérification des e-mails pour contourner cette limite.
+
+Références : https://supabase.com/docs/guides/auth/auth-email-passwordless et https://supabase.com/docs/guides/auth/auth-smtp.
