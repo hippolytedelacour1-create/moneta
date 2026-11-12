@@ -9,3 +9,7 @@ Le fichier netlify.toml configure les tests et le dossier publié.
 Suivi quotidien : docs/EVOLUTIONS.md
 Préparation des comptes : docs/COMPTES-ET-SYNCHRONISATION.md
 Scénario de test utilisateur : docs/TEST-UTILISATEURS.md
+
+Comptes : npm ci puis npm run build avant de servir le dépôt localement.
+Le SDK Supabase est regroupé au build ; aucun framework n'a été ajouté.
+Les inscriptions publiques restent fermées en attente des réglages e-mail.

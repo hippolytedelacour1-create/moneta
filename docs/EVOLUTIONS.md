@@ -30,4 +30,9 @@ Le workflow GitHub lance les deux suites. Netlify lance les tests de données av
 
 ## Limites connues
 
-Les copies locales disparaissent si les données du navigateur sont effacées. Il n'existe pas encore de compte, de synchronisation distante ou d'envoi automatique d'e-mails. Les prévisions futures restent des estimations récurrentes, sans solde bancaire initial. Le changement de mois dans Mes dépenses ne change pas les paramètres mensuels du budget.
+Les copies locales disparaissent si les données du navigateur sont effacées. La connexion des comptes confirmés et la synchronisation explicite sont désormais disponibles ; les inscriptions publiques restent fermées jusqu'à configuration des e-mails. Voir COMPTES-ET-SYNCHRONISATION.md. Les prévisions futures restent des estimations récurrentes, sans solde bancaire initial. Le changement de mois dans Mes dépenses ne change pas les paramètres mensuels du budget.
+
+
+## Build depuis l'ajout des comptes
+
+`npm ci` puis `npm run build` valident les calculs et produisent le SDK Supabase regroupé dans `app/supabase-client.js` (fichier généré, non versionné). Le serveur local doit servir le dépôt après ce build. Netlify utilise la même commande ; aucun secret de base de données n'est nécessaire pour construire le frontend.
