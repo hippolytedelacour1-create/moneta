@@ -35,7 +35,7 @@ export function createHandler({env,fetch:request=globalThis.fetch,now=()=>Date.n
  const base=()=>env('SUPABASE_URL');
  const service=()=>env('SUPABASE_SERVICE_ROLE_KEY');
  const anon=()=>env('SUPABASE_ANON_KEY');
- const key=()=>{const value=env('STRIPE_LIVE_SECRET_KEY')||'';if(!value.startsWith('sk_live_'))throw new BillingError('BILLING_NOT_CONFIGURED',503);return value};
+ const key=()=>{const value=env('STRIPE_LIVE_SECRET_KEY')||'';if(!/^(?:sk|rk)_live_/.test(value))throw new BillingError('BILLING_NOT_CONFIGURED',503);return value};
  async function external(url,options){
   let response;try{response=await request(url,{...options,signal:AbortSignal.timeout(20000)})}catch{throw new BillingError('UPSTREAM_UNAVAILABLE',503)}
   let data;try{data=await response.json()}catch{throw new BillingError('UPSTREAM_UNAVAILABLE',503)}
