@@ -84,6 +84,7 @@ export function createHandler({env,fetch:request=globalThis.fetch,now=()=>Date.n
   const subscription=await stripe('subscriptions/'+encodeURIComponent(subscriptionId)+'?expand[]=latest_invoice');
   if(subscription.livemode!==true||subscription.metadata?.app!=='moneta')throw new BillingError('INVALID_SUBSCRIPTION',400);
   const customerId=typeof subscription.customer==='string'?subscription.customer:subscription.customer?.id;
+  if(typeof customerId!=='string'||!/^cus_[A-Za-z0-9]+$/.test(customerId))throw new BillingError('INVALID_CUSTOMER',400);
   const matches=await db('moneta_live_billing_accounts?customer_id=eq.'+encodeURIComponent(customerId)+'&select=user_id,customer_id');
   const owner=matches[0];if(!owner)return {received:true,ignored:true};if(subscription.metadata?.moneta_user_id!==owner.user_id)throw new BillingError('OWNER_MISMATCH',400);
   const state=subscriptionState(subscription);
@@ -137,7 +138,7 @@ export function createHandler({env,fetch:request=globalThis.fetch,now=()=>Date.n
     billing={user_id:current.id,customer_id:customer.id};await saveAccount(billing);
    }
    const bucket=Math.floor(now()/900000),expiry=(bucket+3)*900;
-   const checkout=await stripe('checkout/sessions',{method:'POST',idempotency:'moneta-checkout-'+current.id+'-'+bucket,body:{mode:'subscription',ui_mode:'hosted_page',managed_payments:{enabled:false},automatic_tax:{enabled:false},customer:billing.customer_id,client_reference_id:current.id,line_items:[{price:C.priceId,quantity:1}],subscription_data:{billing_mode:{type:'flexible'},metadata:{app:'moneta',moneta_user_id:current.id}},metadata:{app:'moneta',moneta_user_id:current.id},locale:'fr',success_url:C.site+'?checkout=live_success',cancel_url:C.site+'?checkout=live_cancelled',expires_at:expiry}});
+   const checkout=await stripe('checkout/sessions',{method:'POST',idempotency:'moneta-checkout-'+current.id+'-'+bucket,body:{mode:'subscription',automatic_tax:{enabled:false},customer:billing.customer_id,client_reference_id:current.id,line_items:[{price:C.priceId,quantity:1}],subscription_data:{billing_mode:{type:'flexible'},metadata:{app:'moneta',moneta_user_id:current.id}},metadata:{app:'moneta',moneta_user_id:current.id},locale:'fr',success_url:C.site+'?checkout=live_success',cancel_url:C.site+'?checkout=live_cancelled',expires_at:expiry}});
    if(checkout.livemode!==true)throw new BillingError('INVALID_MODE',503);
    await saveAccount({...billing,checkout_id:checkout.id,checkout_url:checkout.url,checkout_expires_at:new Date(checkout.expires_at*1000).toISOString()});
    return reply({url:checkout.url,mode:'live'});
