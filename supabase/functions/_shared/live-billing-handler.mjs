@@ -103,7 +103,7 @@ export function createHandler({env,fetch:request=globalThis.fetch,now=()=>Date.n
     if(req.method!=='POST')throw new BillingError('METHOD_NOT_ALLOWED',405);
     return reply(await webhook(req));
    }
-   if(action==='health'&&req.method==='GET'){const secret=await signingSecret();let configured=false;try{configured=!!key()&&secret.startsWith('whsec_')}catch{}return reply({service:'moneta-billing-live',configured,checkout_enabled:configured&&env('MONETA_LIVE_CHECKOUT_ENABLED')==='true',webhook_signature_configured:secret.startsWith('whsec_')});}
+   if(action==='health'&&req.method==='GET'){const webhookSecretConfigured=(await signingSecret()).startsWith('whsec_');let stripeKeyConfigured=false;try{stripeKeyConfigured=!!key()}catch{}const configured=stripeKeyConfigured&&webhookSecretConfigured;return reply({service:'moneta-billing-live',configured,stripe_key_configured:stripeKeyConfigured,webhook_signature_configured:webhookSecretConfigured,checkout_enabled:configured&&env('MONETA_LIVE_CHECKOUT_ENABLED')==='true'});}
    if(!['status','checkout','portal','simulate'].includes(action))throw new BillingError('NOT_FOUND',404);
    if(req.method!==(action==='status'?'GET':'POST'))throw new BillingError('METHOD_NOT_ALLOWED',405);
    const current=await user(req);
