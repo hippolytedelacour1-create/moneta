@@ -12,7 +12,7 @@ assert.match(handler,/startsWith\('sk_test_'\)/, 'Test handler must reject live 
 assert.match(handler,/event\.livemode!==false/, 'Test webhook must reject live events');
 assert.match(handler,/verifySignature\(raw,req\.headers\.get\('Stripe-Signature'\)/, 'Webhook signature verification required');
 assert.match(live,/MONETA_LIVE_CHECKOUT_ENABLED/, 'Live checkout must be protected by server-side switch');
-assert.match(live,/startsWith\('sk_live_'\)/, 'Live handler must never use a test Stripe key');
+assert.match(live,/\(\?:sk\|rk\)_live_/, 'Live handler must accept live secret or restricted keys, never publishable or test keys');
 assert.match(live,/event\.livemode!==true/, 'Live handler must reject Stripe test events');
 assert.match(live,/moneta_live_billing_subscriptions/, 'Live subscriptions must stay isolated');
 console.log('Production safety gate passed: public billing remains disabled.');
