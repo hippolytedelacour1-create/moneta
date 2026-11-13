@@ -34,7 +34,7 @@ test('un webhook invalide ne touche pas les droits de l’utilisateur',async()=>
 });
 test('le statut de facturation exige le bon prix et une facture payée',async()=>{
  const {subscriptionState}=await import('../supabase/functions/_shared/billing-handler.mjs');
- const sub={status:'active',latest_invoice:{status:'paid'},items:{data:[{quantity:1,current_period_end:1795000000,price:{id:'price_1Ub5U4884rWrgKXupz2EMosL',currency:'eur',unit_amount:490}}]}};
+ const sub={status:'active',latest_invoice:{status:'paid'},items:{data:[{quantity:1,current_period_end:1795000000,price:{id:'price_1UbHWz884rWrgKXu0lvagRoR',currency:'eur',unit_amount:499}}]}};
  assert.equal(subscriptionState(sub).paid,true);assert.equal(subscriptionState({...sub,latest_invoice:{status:'open'}}).paid,false);
  assert.throws(()=>subscriptionState({...sub,items:{data:[]}}));
 });
