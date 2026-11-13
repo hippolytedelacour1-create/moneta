@@ -11,7 +11,7 @@ function loadState(){
   try { loadedRaw=budgetStore.get();return loadedRaw===null?D.fresh():D.parseBackup(loadedRaw); }
   catch {storageIssue='Les données locales ne peuvent pas être lues. Elles sont conservées. Tu peux exporter le fichier original ou restaurer une sauvegarde dans Paramètres.';return D.fresh();}
 }
-let state=loadState(),view=new URLSearchParams(location.search).get('offre')==='plus'?'plus':'home',selectedMonth=today().slice(0,7),editingId=null,pendingImport=null;
+let state=loadState(),view='home',selectedMonth=today().slice(0,7),editingId=null,pendingImport=null;
 function save(next=state,{recovery=false,backup=false}={}){
   if(storageIssue&&!recovery){show(storageIssue);return false}
   try{
@@ -160,5 +160,5 @@ window.MonetaApp={
   useLocal(){this.activate(localBudgetStore,'Budget local · cet appareil','account')},
   section,show,
 };
-section(view);if(storageIssue)show(storageIssue);
+section(new URLSearchParams(location.search).get('offre')==='plus'?'plus':'home');if(storageIssue)show(storageIssue);
 if(window.MonetaAccounts)MonetaAccounts.init();
