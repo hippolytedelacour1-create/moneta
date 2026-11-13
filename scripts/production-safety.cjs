@@ -1,0 +1,12 @@
+const fs=require('node:fs');const assert=require('node:assert/strict');
+const cloud=fs.readFileSync('app/cloud-config.js','utf8');
+const plus=fs.readFileSync('app/plus.js','utf8');
+const config=fs.readFileSync('supabase/functions/_shared/billing-config.mjs','utf8');
+const handler=fs.readFileSync('supabase/functions/_shared/billing-handler.mjs','utf8');
+assert.match(cloud,/"allowSignup": false/, 'Public signup must stay disabled until launch review');
+assert.match(plus,/environnement de test/, 'Payment UI must disclose test mode');
+assert.match(config,/mode:'test'/, 'Current billing configuration must remain test-only');
+assert.match(handler,/startsWith\('sk_test_'\)/, 'Test handler must reject live Stripe keys');
+assert.match(handler,/event\.livemode!==false/, 'Test webhook must reject live events');
+assert.match(handler,/verifySignature\(raw,req\.headers\.get\('Stripe-Signature'\)/, 'Webhook signature verification required');
+console.log('Production safety gate passed: public billing remains disabled.');
