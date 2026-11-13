@@ -17,7 +17,7 @@ This is an operational handoff, not a claim of end-to-end billing validation.
 - Existing test payment endpoint `moneta-billing` remains isolated and unchanged.
 
 ### Required before first live charge
-1. Verify configured Supabase Edge secrets are valid and accessible to the deployed Live function (not just named in settings). Never log secret values.
+1. **CONFIRMED BLOCKER (HTTPS probe via GitHub Actions):** Supabase Live Edge Function reports `stripe_key_configured:false` and `webhook_signature_configured:true`. Set or correct `STRIPE_LIVE_SECRET_KEY` in Supabase Edge Function Secrets using the correct Stripe **Live** secret key (starting `sk_live_`). Do not paste its value into GitHub, source code, or chats. Re-run the live readiness check after saving. Never log secret values.
 2. Exercise Live function `/health`, `/status`, unauthorized `/checkout` and unsigned `/webhook` over real HTTPS. Do not infer runtime health from deployment status.
 3. Verify production Checkout Session creation only after administrative approval; use a controlled, authorized test of a real payment before opening public signup.
 4. Enable and test the signed Stripe **Live** webhook, then verify entitlement on paid renewal, failed renewal, cancellation at period end, and repeated/out-of-order events. No access may be granted on an unverified return URL.
