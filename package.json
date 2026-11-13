@@ -3,7 +3,7 @@
   "version": "2.2.0",
   "private": true,
   "scripts": {
-    "test": "node --test tests/budget.test.cjs tests/sync.test.cjs tests/plus.test.cjs tests/billing.test.cjs tests/live-billing.test.cjs",
+    "test": "node --test tests/budget.test.cjs tests/sync.test.cjs tests/plus.test.cjs tests/billing.test.cjs tests/live-billing.test.cjs tests/live-billing-webhook.test.cjs",
     "build": "npm test && node scripts/build.cjs",
     "build:edge": "node scripts/build-edge.cjs"
   },
