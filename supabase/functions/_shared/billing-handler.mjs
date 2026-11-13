@@ -27,7 +27,7 @@ export async function verifySignature(raw,header,secret,now=Date.now(),crypto=gl
 export function subscriptionState(subscription){
  const items=subscription.items?.data||[];
  const item=items.find(x=>x.price?.id===C.priceId);
- if(!item||items.length!==1||item.quantity!==1||item.price.currency!=='eur'||item.price.unit_amount!==490)throw new BillingError('UNEXPECTED_PRICE',400);
+ if(!item||items.length!==1||item.quantity!==1||item.price.currency!=='eur'||item.price.unit_amount!==499)throw new BillingError('UNEXPECTED_PRICE',400);
  const end=Number(item.current_period_end??subscription.current_period_end);
  const paid=subscription.latest_invoice?.status==='paid'&&Number.isFinite(end)&&end>0;
  return {status:subscription.status,paid,valid_until:Number.isFinite(end)&&end>0?new Date(end*1000).toISOString():null,cancel_at_period_end:!!subscription.cancel_at_period_end};
