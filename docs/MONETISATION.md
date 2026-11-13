@@ -6,7 +6,7 @@ Le modèle choisi par le propriétaire est freemium. Les fonctions déjà livré
 
 Première fonction Plus livrée : simulation d'une dépense supplémentaire hors enveloppes et de variations mensuelles de revenus/dépenses sur 1 à 12 mois. Le calcul s'exécute sur le serveur après vérification des droits. Les objectifs multiples et bilans avancés restent des pistes de développement ; ils ne sont pas présentés comme disponibles.
 
-**État : test exclusivement.** Le prix de travail est 4,90 EUR/mois. Aucun encaissement réel n'est activé et ce tarif doit être validé avant le lancement réel. Le propriétaire a indiqué ne pas facturer la TVA ; Stripe Tax et Managed Payments ne sont pas activés pour ces tests. Cela ne constitue pas une qualification juridique du régime fiscal.
+**État : test exclusivement.** Le tarif de 4,90 EUR/mois a été validé par le propriétaire le 13 novembre 2026. Aucun encaissement réel n'est activé. Le propriétaire a indiqué ne pas facturer la TVA ; Stripe Tax et Managed Payments ne sont pas activés pour ces tests. Cela ne constitue pas une qualification juridique du régime fiscal.
 
 La vitrine présente Gratuit et Plus avec leur état réel. Le formulaire de liste d'attente fictif est retiré ; le bouton principal ouvre l'application gratuite. Aucun e-mail commercial ni aucune campagne payante n'ont été envoyés ou lancés.
 
@@ -70,8 +70,8 @@ L'audit Supabase signale une configuration d'authentification à examiner : prot
 
 ## Avant les premiers encaissements réels
 
-Valider le tarif et le contenu exact de Plus, connecter un compte Stripe réel et terminer son activation avec les informations du propriétaire. Définir les conditions de vente, le contact client et les réglages fiscaux correspondant à l'activité réelle. Aucun abonnement live n'est créé automatiquement par cette livraison.
+Le tarif mensuel est validé ; confirmer le contenu commercial et connecter un compte Stripe réel et terminer son activation avec les informations du propriétaire. Définir les conditions de vente, le contact client et les réglages fiscaux correspondant à l'activité réelle. Aucun abonnement live n'est créé automatiquement par cette livraison.
 
-Il reste également à terminer l'ouverture des inscriptions, les e-mails de confirmation, la récupération de mot de passe et la suppression complète du compte. La connexion des comptes confirmés et le mode local restent utilisables pendant cette phase.
+Il reste également à terminer l'ouverture des inscriptions, les e-mails de confirmation, la livraison des e-mails de récupération et la suppression complète du compte. Le changement de mot de passe et le parcours frontend de récupération sont livrés ; ce dernier reste masqué tant que le SMTP n’est pas vérifié. La connexion des comptes confirmés et le mode local restent utilisables pendant cette phase.
 
 Première cible de validation : obtenir 10 utilisateurs qui reviennent chaque semaine, puis 10 abonnés payants satisfaits. Mesurer activation (budget configuré et première dépense), retour hebdomadaire et conversion Plus avant toute publicité payante. À 4,90 €, 100 abonnés mensuels représentent 490 € de revenus bruts avant frais de paiement, taxes, hébergement et travail : ce n'est pas un bénéfice ni une prévision.

@@ -32,3 +32,4 @@ jobs:
           node tests/browser.cjs
           MONETA_MOCK_AUTH=1 node tests/accounts.browser.cjs
           node tests/plus-ci.browser.cjs
+          node tests/account-security.browser.cjs

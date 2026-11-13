@@ -152,7 +152,7 @@ window.MonetaApp={
   isLocal:()=>budgetStore===localBudgetStore,
   download,
   exportCurrent:()=>download(storageIssue?budgetStore.get():JSON.stringify(state,null,2),'moneta-budget-'+today()+'.json'),
-  activate(store,label,destination='account'){
+  activate(store,label,destination=view==='plus'?'plus':'account'){
     document.querySelectorAll('dialog[open]').forEach(d=>d.close());
     budgetStore=store;contextLabel=label;storageIssue='';loadedRaw=null;state=loadState();
     document.getElementById('contextbadge').textContent=label;section(destination);if(storageIssue)show(storageIssue);
@@ -160,5 +160,5 @@ window.MonetaApp={
   useLocal(){this.activate(localBudgetStore,'Budget local · cet appareil','account')},
   section,show,
 };
-render();if(storageIssue)show(storageIssue);
+section(new URLSearchParams(location.search).get('offre')==='plus'?'plus':'home');if(storageIssue)show(storageIssue);
 if(window.MonetaAccounts)MonetaAccounts.init();
