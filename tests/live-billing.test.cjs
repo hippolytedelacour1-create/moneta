@@ -18,6 +18,19 @@ test('live checkout fails closed until explicitly enabled, without touching Stri
  assert.equal((await result.json()).error,'PRODUCTION_NOT_ENABLED');
  assert.equal(stripeCalls,0);
 });
+test('live restricted keys are accepted, test and publishable keys are blocked',async()=>{
+ const {createHandler}=await import('../supabase/functions/_shared/live-billing-handler.mjs');
+ async function health(stripeKey){
+  const handler=createHandler({env:name=>name==='STRIPE_LIVE_SECRET_KEY'?stripeKey:env(name),now:()=>now,crypto:webcrypto,fetch:async()=>{throw Error('Network not expected')}});
+  const res=await handler(new Request(prefix+'health'));
+  assert.equal(res.status,200);return res.json();
+ }
+ assert.equal((await health('rk_live_fixture_restricted')).stripe_key_configured,true);
+ assert.equal((await health('sk_live_fixture_standard')).stripe_key_configured,true);
+ assert.equal((await health('pk_live_fixture_publishable')).stripe_key_configured,false);
+ assert.equal((await health('sk_test_fixture_sandbox')).stripe_key_configured,false);
+ assert.equal((await health('rk_test_fixture_sandbox')).stripe_key_configured,false);
+});
 test('live checkout refuses unauthenticated users',async()=>{
  const {createHandler}=await import('../supabase/functions/_shared/live-billing-handler.mjs');
  const handler=createHandler({env,now:()=>now,crypto:webcrypto,fetch:async()=>{throw Error('No network expected')}});
