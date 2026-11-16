@@ -35,7 +35,7 @@ export function createHandler({env,fetch:request=globalThis.fetch,now=()=>Date.n
  const base=()=>env('SUPABASE_URL');
  const service=()=>env('SUPABASE_SERVICE_ROLE_KEY');
  const anon=()=>env('SUPABASE_ANON_KEY');
- const key=()=>{const value=env('STRIPE_LIVE_SECRET_KEY')||'';if(!/^(?:sk|rk)_live_/.test(value))throw new BillingError('BILLING_NOT_CONFIGURED',503);return value};
+ const key=()=>{const value=(env('STRIPE_LIVE_SECRET_KEY')||'').trim();if(!/^(?:sk|rk)_live_[A-Za-z0-9]+$/.test(value))throw new BillingError('BILLING_NOT_CONFIGURED',503);return value};
  async function external(url,options){
   let response;try{response=await request(url,{...options,signal:AbortSignal.timeout(20000)})}catch{throw new BillingError('UPSTREAM_UNAVAILABLE',503)}
   let data;try{data=await response.json()}catch{throw new BillingError('UPSTREAM_UNAVAILABLE',503)}
@@ -103,7 +103,7 @@ export function createHandler({env,fetch:request=globalThis.fetch,now=()=>Date.n
     if(req.method!=='POST')throw new BillingError('METHOD_NOT_ALLOWED',405);
     return reply(await webhook(req));
    }
-   if(action==='health'&&req.method==='GET'){const webhookSecretConfigured=(await signingSecret()).startsWith('whsec_');let stripeKeyConfigured=false;try{stripeKeyConfigured=!!key()}catch{}const configured=stripeKeyConfigured&&webhookSecretConfigured;return reply({service:'moneta-billing-live',configured,stripe_key_configured:stripeKeyConfigured,webhook_signature_configured:webhookSecretConfigured,checkout_enabled:configured&&env('MONETA_LIVE_CHECKOUT_ENABLED')==='true'});}
+   if(action==='health'&&req.method==='GET'){const webhookSecretConfigured=(await signingSecret()).startsWith('whsec_');const stripeKeyPresent=!!(env('STRIPE_LIVE_SECRET_KEY')||'').trim();let stripeKeyConfigured=false;try{stripeKeyConfigured=!!key()}catch{}const configured=stripeKeyConfigured&&webhookSecretConfigured;return reply({service:'moneta-billing-live',configured,stripe_key_present:stripeKeyPresent,stripe_key_configured:stripeKeyConfigured,webhook_signature_configured:webhookSecretConfigured,checkout_enabled:configured&&env('MONETA_LIVE_CHECKOUT_ENABLED')==='true'});}
    if(!['status','checkout','portal','simulate'].includes(action))throw new BillingError('NOT_FOUND',404);
    if(req.method!==(action==='status'?'GET':'POST'))throw new BillingError('METHOD_NOT_ALLOWED',405);
    const current=await user(req);
@@ -119,7 +119,13 @@ export function createHandler({env,fetch:request=globalThis.fetch,now=()=>Date.n
    }
    key();if(!await signingSecret())throw new BillingError('WEBHOOK_NOT_CONFIGURED',503);
    if(action==='checkout'&&env('MONETA_LIVE_CHECKOUT_ENABLED')!=='true')throw new BillingError('PRODUCTION_NOT_ENABLED',503);
-   if((await stripe('account')).id!==C.accountId)throw new BillingError('WRONG_STRIPE_ACCOUNT',503);
+   // A restricted rk_live_ key may not have permission to read /v1/account.
+   // The precise Live price belongs to only one Stripe account; validate that instead.
+   const price=await stripe('prices/'+encodeURIComponent(C.priceId));
+   if(price.id!==C.priceId||price.livemode!==true||price.active!==true||
+      price.currency!==C.currency||price.unit_amount!==C.amount||
+      price.recurring?.interval!=='month'||price.recurring?.interval_count!==1)
+     throw new BillingError('WRONG_STRIPE_PRICE',503);
    let billing=await account(current.id);
    if(action==='portal'){
     if(!billing)throw new BillingError('NO_SUBSCRIPTION',404);
