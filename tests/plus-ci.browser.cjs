@@ -19,5 +19,13 @@ const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
  assert.equal(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
  server.setPlus(0,false);await p.getByRole('button',{name:'Actualiser mon accès',exact:true}).click();await p.waitForFunction(()=>!document.getElementById('scenarioform'));
  await p.goto('http://127.0.0.1:8080/app/?offre=plus');await p.getByText('Tu utilises la formule gratuite.',{exact:true}).waitFor();assert.equal(await p.locator('[data-view=plus]').getAttribute('class'),'active');
+ await context.route('https://*.supabase.co/functions/v1/moneta-billing-live/status',route=>route.fulfill({
+  json:{mode:'live',ready:false,plus:true,status:'active',cancel_at_period_end:true,valid_until:'2026-12-18T10:47:09.000Z'}
+ }));
+ await p.evaluate(()=>{window.MONETA_CLOUD_CONFIG.billingMode='live'});
+ await p.getByRole('button',{name:'Actualiser mon accès',exact:true}).click();
+ await p.getByRole('button',{name:'Gérer mon abonnement',exact:true}).waitFor();
+ assert.equal(await p.getByRole('button',{name:'Souscrire à Moneta Plus',exact:true}).count(),0);
+ await p.getByText('Ton abonnement est résilié en fin de période. Tu gardes l’accès à Plus jusqu’au 18 décembre 2026.',{exact:true}).waitFor();
  assert.deepEqual(errors,[]);await browser.close();console.log('Vitrine et Plus OK : freemium explicite, aucun faux formulaire, accès serveur, scénario et mobile.');
 })().catch(e=>{console.error(e.stack);process.exit(1)});

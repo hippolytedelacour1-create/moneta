@@ -71,3 +71,30 @@ test('public health never exposes secret keys',async()=>{
  const body=await response.json();assert.equal(body.configured,true);assert.equal(body.checkout_enabled,false);
  assert.ok(!JSON.stringify(body).includes('sk_live_'));assert.ok(!JSON.stringify(body).includes('whsec_'));
 });
+
+test('live checkout pilot admits only the configured account',async()=>{
+ const {createHandler}=await import('../supabase/functions/_shared/live-billing-handler.mjs');
+ const other='00000000-0000-4000-8000-000000000002';
+ for(const [allowed,expected] of [[uid,true],[other,false],['',false],[undefined,true]]){
+  let stripeCalls=0;
+  const handler=createHandler({
+   env:name=>name==='MONETA_LIVE_CHECKOUT_ENABLED'?'true':name==='MONETA_LIVE_CHECKOUT_ALLOWED_USER_ID'?allowed:env(name),
+   now:()=>now,crypto:webcrypto,fetch:async url=>{
+    if(url.includes('/auth/v1/user'))return json({id:uid});
+    if(url.includes('moneta_live_billing_subscriptions?'))return json([]);
+    if(url.startsWith('https://api.stripe.com/v1/prices/')){stripeCalls++;return json({},403)}
+    throw Error('Unexpected call: '+url);
+   }
+  });
+  const headers={Authorization:'Bearer disposable_jwt'};
+  const status=await handler(new Request(prefix+'status',{headers}));
+  assert.equal((await status.json()).ready,expected);
+  const checkout=await handler(new Request(prefix+'checkout',{method:'POST',headers}));
+  assert.equal((await checkout.json()).error,expected?'UPSTREAM_REJECTED':'PRODUCTION_NOT_ENABLED');
+  assert.equal(stripeCalls,expected?1:0);
+  const health=await handler(new Request(prefix+'health'));
+  const flags=await health.json();
+  assert.equal(flags.checkout_restricted,allowed!==undefined);
+  assert.ok(!JSON.stringify(flags).includes(uid));
+ }
+});

@@ -26,7 +26,7 @@ jobs:
           PLAYWRIGHT_MODULE: ${{ runner.temp }}/moneta-browser/node_modules/playwright
           PGLITE_MODULE: ${{ runner.temp }}/moneta-browser/node_modules/@electric-sql/pglite
         run: |
-          python -m http.server 8080 > "$RUNNER_TEMP/moneta-http.log" 2>&1 &
+          python -m http.server 8080 --directory dist > "$RUNNER_TEMP/moneta-http.log" 2>&1 &
           curl --retry 10 --retry-connrefused --retry-delay 1 --fail http://127.0.0.1:8080/app/ --output /dev/null
           node --test tests/database.cjs
           node tests/browser.cjs
