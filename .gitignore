@@ -7,3 +7,4 @@ app/supabase-client.js
 supabase/.temp/
 
 work/
+dist/

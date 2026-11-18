@@ -1,5 +1,5 @@
 [build]
-  publish = "."
+  publish = "dist"
   command = "npm run build"
 
 [build.environment]
@@ -14,3 +14,10 @@
   for = "/"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
+    X-Frame-Options = "DENY"
